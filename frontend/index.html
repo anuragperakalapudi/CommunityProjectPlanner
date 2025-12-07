@@ -1,104 +1,158 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Community Project Copilot</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        max-width: 800px;
-        margin: 20px auto;
-      }
-      .chat {
-        border: 1px solid #ddd;
-        padding: 10px;
-        height: 400px;
-        overflow-y: auto;
-        margin-bottom: 10px;
-      }
-      .msg-user {
-        margin: 5px 0;
-      }
-      .msg-assistant {
-        margin: 5px 0;
-        background: #f5f5f5;
-        padding: 5px;
-        border-radius: 4px;
-      }
-      textarea {
-        width: 100%;
-      }
-      input {
-        width: 100%;
-        margin-bottom: 8px;
-      }
-    </style>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>Community Project Copilot</h1>
+    <header class="top-nav">
+      <div class="brand">
+        <div class="brand-mark">CPC</div>
+        <div class="brand-text">
+          <span class="brand-name">Community Project Copilot</span>
+          <span class="brand-subtitle">Built on Cloudflare AI</span>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a
+          href="https://communityprojectplanner.pages.dev/"
+          class="pill pill-ghost"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Live demo
+        </a>
+        <a
+          href="https://github.com/anuragperakalapudi/cf_ai_community_project_copilot"
+          class="pill"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span class="pill-dot"></span>
+          View on GitHub
+        </a>
+      </div>
+    </header>
 
-    <label>
-      Project Title:
-      <input id="title" value="Trail Renovation" />
-    </label>
+    <main class="layout">
+      <!-- Sidebar: project details -->
+      <aside class="sidebar">
+        <section class="card project-card">
+          <h2>Project setup</h2>
+          <label class="field">
+            <span class="field-label">Project title</span>
+            <input
+              id="title-input"
+              class="input"
+              value="Trail Renovation"
+              autocomplete="off"
+            />
+          </label>
 
-    <div class="chat" id="chat"></div>
+          <label class="field">
+            <span class="field-label">Goal summary</span>
+            <textarea
+              id="summary-input"
+              class="input input-multiline"
+              rows="3"
+              placeholder="Example: Renovate a 300 ft trail in my local park with 20 volunteers this spring."
+            ></textarea>
+          </label>
 
-    <textarea
-      id="input"
-      rows="3"
-      placeholder="Describe your project or ask a question..."
-    ></textarea>
-    <button id="send">Send</button>
+          <div class="card-footer-row">
+            <button id="apply-summary" class="btn btn-secondary">
+              Use summary as first message
+            </button>
+          </div>
+        </section>
 
-    <script>
-      const projectId =
-        localStorage.getItem("projectId") || crypto.randomUUID();
-      localStorage.setItem("projectId", projectId);
+        <section class="card hints-card">
+          <h3>Quick prompts</h3>
+          <div class="chips">
+            <button class="chip quick-prompt" data-prompt="Give me a detailed day of schedule for this project.">
+              Day of schedule
+            </button>
+            <button class="chip quick-prompt" data-prompt="List tools and materials I should buy first with a rough budget.">
+              Tools and budget
+            </button>
+            <button class="chip quick-prompt" data-prompt="Suggest roles and responsibilities for 15 to 25 volunteers.">
+              Volunteer roles
+            </button>
+            <button class="chip quick-prompt" data-prompt="Help me break this into a realistic timeline over the next month.">
+              Timeline
+            </button>
+          </div>
+        </section>
 
-      const API_URL =
-        "https://backend.perakalapudianurag.workers.dev/api/chat";
+        <section class="card info-card">
+          <h3>How this works</h3>
+          <ul class="info-list">
+            <li>
+              Each browser session gets a unique project id stored locally,
+              so the copilot can remember context.
+            </li>
+            <li>
+              When you click send, the backend calls a Cloudflare AI model
+              and stores the updated plan in Workers KV.
+            </li>
+            <li>
+              It usually takes around <strong>5 to 15 seconds</strong> to generate
+              a good response. Wait for the status to return to
+              <em>Ready</em> before sending the next message.
+            </li>
+          </ul>
+          <button id="new-project" class="btn btn-ghost">
+            Start a fresh project
+          </button>
+        </section>
+      </aside>
 
-      const chatEl = document.getElementById("chat");
-      const inputEl = document.getElementById("input");
-      const titleEl = document.getElementById("title");
-      const sendBtn = document.getElementById("send");
+      <!-- Main chat panel -->
+      <section class="chat-panel">
+        <div class="chat-header">
+          <div>
+            <h1>Planner workspace</h1>
+            <p class="chat-subtitle">
+              Describe your project and the copilot will build a concrete plan:
+              schedule, roles, tools and budget.
+            </p>
+          </div>
+          <div class="status-pill" id="status-pill">
+            <span class="status-dot status-ready"></span>
+            <span class="status-text" id="status-text">Ready</span>
+          </div>
+        </div>
 
-      function addMessage(role, text) {
-        const div = document.createElement("div");
-        div.className = role === "user" ? "msg-user" : "msg-assistant";
-        div.textContent = (role === "user" ? "You: " : "Copilot: ") + text;
-        chatEl.appendChild(div);
-        chatEl.scrollTop = chatEl.scrollHeight;
-      }
+        <div class="chat-window" id="chat-window">
+          <!-- Messages get rendered here -->
+        </div>
 
-      async function send() {
-        const text = inputEl.value.trim();
-        if (!text) return;
-        addMessage("user", text);
-        inputEl.value = "";
+        <form class="composer" id="composer">
+          <div class="composer-inner">
+            <textarea
+              id="message-input"
+              class="composer-input"
+              rows="2"
+              placeholder="Describe your project or ask a specific question..."
+            ></textarea>
+            <div class="composer-footer">
+              <span class="composer-hint">
+                Enter to send • Shift + Enter for new line
+              </span>
+              <button type="submit" class="btn" id="send-btn">
+                Send
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+    </main>
 
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectId,
-            projectTitle: titleEl.value,
-            message: text,
-          }),
-        });
-
-        const data = await res.json();
-        addMessage("assistant", data.reply);
-      }
-
-      sendBtn.addEventListener("click", send);
-      inputEl.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          send();
-        }
-      });
-    </script>
+    <script src="main.js"></script>
   </body>
 </html>

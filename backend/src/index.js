@@ -13,7 +13,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Basic CORS so the frontend can call this
+    // Basic CORS so the frontend (Pages) can call this
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
@@ -74,9 +74,15 @@ Goals:
    - Materials & tools list
    - Rough budget estimate
    - Day-of schedule
-   - Roles & responsibilities
+   - Roles & responsibilities.
 
-Be concise and practical.
+Response style:
+- Be concise and practical.
+- Use clear headings and bullet points.
+- Keep responses roughly 250–300 words.
+- Do NOT repeat the full project description; go straight into the plan.
+- If the user asks a broad question (like a full day-of schedule), give a compact schedule instead of long paragraphs.
+
 Project title: ${projectTitle}.
 `.trim();
 
